@@ -4,10 +4,10 @@
 #SBATCH --job-name=env_creation
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --gres=gpu:8
+#SBATCH --gres=gpu:1
 #SBATCH --exclusive
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=128
+#SBATCH --cpus-per-task=16
 #SBATCH --mem=0
 #SBATCH --time=01:00:00
 
