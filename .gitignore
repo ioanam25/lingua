@@ -3,4 +3,5 @@
 *.ipynb
 slurm-*.out
 wandb
-re_arc
+re_arc/
+sources/
