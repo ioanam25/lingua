@@ -1,0 +1,15 @@
+Cloning into './data/fineweb_edu/terashuf'...
+make: Entering directory '/gpfs/data/oermannlab/users/im2178/lingua/data/fineweb_edu/terashuf'
+g++ -std=c++11 -Wall -Dhome -O3      terashuf.cc   -o terashuf
+terashuf.cc: In member function ‘int FenwickTree::findIndexAndDraw(ll)’:
+terashuf.cc:197:19: warning: comparison of integer expressions of different signedness: ‘ll’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  197 |             if (i >= d)
+      |                 ~~^~~~
+make: Leaving directory '/gpfs/data/oermannlab/users/im2178/lingua/data/fineweb_edu/terashuf'
+/gpfs/data/oermannlab/users/im2178/.conda/envs/lingua_241031/lib/python3.11/site-packages/huggingface_hub/file_download.py:797: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+Setting up terashuf...
+Running: git clone https://github.com/alexandres/terashuf ./data/fineweb_edu/terashuf
+Running: make -C ./data/fineweb_edu/terashuf
+Downloading dataset from HuggingFaceFW/fineweb-edu...
+Fetching 2258 files:   0%|          | 0/2258 [00:00<?, ?it/s]slurmstepd-a100-4004: error: *** JOB 54251930 ON a100-4004 CANCELLED AT 2024-11-11T14:47:25 ***

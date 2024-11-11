@@ -1,6 +1,6 @@
 # Template config, need to change dump_dir, data.root_dir and data.tokenizer.path
 
-# dump_dir: !!CHANGETHIS!!
+dump_dir: debug_dir
 name: "debug"
 steps: 1000
 probe_freq: 100
@@ -25,9 +25,9 @@ model:
     n_heads: 8
 
 data:
-    root_dir: data/shuffled
+    root_dir: data
     sources:
-        dclm_baseline_1.0: 1.0
+        dclm_baseline_1.0_10prct_shuffled: 1.0
     batch_size: 32
     prefetch_size: 64
     seq_len: 2048
@@ -35,6 +35,7 @@ data:
     load_async: true
     tokenizer:
         name: bytes
+        path: tokenizer/original/tokenizer.model
 
 profiling:
     run: true

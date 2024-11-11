@@ -44,6 +44,44 @@ class MockTokenizer(Tokenizer):
     def encode(self, tokens, add_bos, add_eos):
         return tokens
 
+class CharTokenizer(Tokenizer):
+    def __init__(self):
+        ''' we'll do character level tokens: 
+        IO training will begin with an B and end with a E
+        i for input o for output
+        thinking token will be t 
+        matrix will have []0123456789
+        test input will begin with T
+        test output will finish with F
+        pad at the end with 'P' until 2000 ch'''
+        self.chars = ['P', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '[', ']', 'B', 'E', 'i', 'o', 'T', 'F', 't']
+        self.vocab_size = len(self.chars)
+
+        # create a mapping from characters to integers
+        self.stoi = { ch:i for i,ch in enumerate(self.chars)}
+        self.itos = { i:ch for i,ch in enumerate(self.chars)}
+
+    def encode(self, s: str, add_bos: bool = False, add_eos: bool = False):
+        return [self.stoi[c] for c in s] # encoder: take a string, output a list of integers
+    
+    def decode(self, tokens: List[int], add_bos: bool = False, add_eos: bool = False):
+        return ''.join([self.itos[i] for i in tokens]) # decoder: take a list of integers, output a string
+    
+    def get_token_offsets(self, text: str, tokens: Optional[List[int]] = None) -> Tuple[List[str], List[int]]:
+        if tokens is None:
+            tokens = self.encode(text)  # If no tokens are provided, use the encoder to generate tokens.
+
+        decoded_chars, offsets = [], []
+        char_pos = 0  # Character-based position in the original string
+        for token in tokens:
+            # Look up the character corresponding to the token
+            char = self.itos.get(token, '')  # Default to '' if the token is not found in the vocabulary
+            if char:
+                decoded_chars.append(char)
+                offsets.append(char_pos)  # The offset corresponds to the position of the character in the original string
+            char_pos += 1  # Move to the next character position
+
+        return decoded_chars, offsets
 
 class ByteTokenizer(Tokenizer):
     def __init__(self):
@@ -196,5 +234,7 @@ def build_tokenizer(name: str, path: Optional[str] = None) -> Tokenizer:
         return SentencePieceTokenizer(path)
     elif name == "tiktoken":
         return TikTokenTokenizer(path)
+    elif name == 'char':
+        return CharTokenizer()
     else:
         raise NotImplementedError(f"{name} tokenizer type is not implemented")

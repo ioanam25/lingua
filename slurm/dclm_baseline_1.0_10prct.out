@@ -1,0 +1,68 @@
+/bin/sh: line 0: ulimit: open files: cannot modify limit: Operation not permitted
+terashuf executable already exists. Skipping setup.
+Running: ulimit -n 100000 && find ./data/dclm_baseline_1.0_10prct -type f -name '*.jsonl.zst' -print0 | xargs -0 zstdcat | ./data/dclm_baseline_1.0_10prct/terashuf/terashuf | split -n r/32 -d --suffix-length 2 --additional-suffix .jsonl - ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.; trap 'echo "Caught signal 13, exiting with code 1"; exit 1' SIGPIPE;
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.00.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.00.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.01.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.01.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.02.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.02.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.03.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.03.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.04.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.04.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.05.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.05.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.06.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.06.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.07.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.07.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.08.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.08.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.09.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.09.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.10.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.10.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.11.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.11.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.12.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.12.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.13.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.13.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.14.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.14.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.15.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.15.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.16.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.16.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.17.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.17.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.18.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.18.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.19.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.19.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.20.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.20.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.21.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.21.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.22.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.22.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.23.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.23.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.24.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.24.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.25.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.25.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.26.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.26.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.27.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.27.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.28.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.28.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.29.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.29.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.30.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.30.jsonl
+Running: head -n 10000 ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.31.jsonl >> ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.val.jsonl
+Running: sed -i '1,10000d' ./data/dclm_baseline_1.0_10prct_shuffled/dclm_baseline_1.0_10prct.chunk.31.jsonl
+All tasks completed successfully!

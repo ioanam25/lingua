@@ -5,3 +5,4 @@ slurm-*.out
 wandb
 re_arc/
 sources/
+data/

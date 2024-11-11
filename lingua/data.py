@@ -134,6 +134,19 @@ class PrefetchState(TypedDict):
     prefetch_size: int
     batch_size: int
 
+def read_jsonl_block(file_path: str):
+    """Read all lines from a JSONL file into memory."""
+    with open(file_path, "r") as file:
+        return [json.loads(line) for line in file]
+
+def sample_and_combine_lines(lines: list, rng: np.random.Generator) -> dict:
+    """Sample 3 random lines and combine their text/content."""
+    sampled_lines = rng.choice(lines, size=3, replace=False)
+    combined_text = ""
+    for line in sampled_lines:
+        content_key = "text" if "text" in line else "content"
+        combined_text += line[content_key] + " "
+    return {"text": combined_text.strip()}
 
 def read_jsonl(
     file_path: str,
@@ -750,3 +763,159 @@ def build_dataloader_from_args(
         return async_iterator(args.prefetch_size, data_builder)
     else:
         return data_builder()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def get_source_weights(root_dir: str) -> Dict[str, float]:
+    """
+    Get all subdirectories from root_dir and assign equal weights.
+    Only includes subdirectories that contain .jsonl.chunk.* files.
+    """
+    sources = {}
+    for subdir in Path(root_dir).iterdir():
+        if not subdir.is_dir():
+            continue
+        
+        # Check if directory contains any chunk files
+        chunk_files = list(subdir.glob("*.chunk.*.jsonl"))
+        if chunk_files:
+            sources[subdir.name] = 1.0
+    
+    # Normalize weights
+    total_weight = sum(sources.values())
+    return {k: v/total_weight for k, v in sources.items()}
+
+def main():
+    # Configuration
+    root_dir = "sources"  # Your root directory containing the 400 subdirectories
+    world_size = 8  # Number of workers
+    rank = 0  # Current worker rank
+    
+    # Create DataArgs instance
+    args = DataArgs(
+        root_dir=root_dir,
+        sources=get_source_weights(root_dir),
+        batch_size=4,
+        seq_len=2048,
+        n_views=2,
+        seed=42,
+        add_bos=True,
+        add_eos=True,
+        load_async=True,
+        prefetch_size=64,
+        tokenizer=TokenizerArgs(name="char")  # or whatever tokenizer you're using
+    )
+    
+    # Initialize the dataloader state
+    logger.info("Initializing dataloader state...")
+    state = init_dataloader_state_from_args(
+        args=args,
+        rank=rank,
+        world_size=world_size
+    )
+    
+    # Build and test the dataloader
+    logger.info("Building dataloader...")
+    with build_dataloader_from_args(args, state) as loader:
+        logger.info("Starting data loading test...")
+        
+        # Test loading several batches
+        n_batches = 5
+        for i in range(n_batches):
+            try:
+                batch, new_state = next(loader)
+                
+                # Print information about the batch
+                logger.info(f"\nBatch {i + 1}/{n_batches}:")
+                logger.info(f"Batch shape: {batch.shape}")
+                logger.info(f"Batch dtype: {batch.dtype}")
+                logger.info(f"Batch min/max values: {batch.min()}, {batch.max()}")
+                
+                # Print a sample sequence from the batch
+                seq_idx = 0  # First sequence in batch
+                view_idx = 0  # First view
+                seq = batch[seq_idx, :, view_idx]
+                logger.info(f"Sample sequence (first 50 tokens): {seq[:50]}")
+                
+                # Update state
+                state = new_state
+                
+            except StopIteration:
+                logger.info("Reached end of dataset")
+                break
+            except Exception as e:
+                logger.error(f"Error during iteration: {str(e)}")
+                raise
+
+def test_single_source():
+    """Test loading from a single source directory"""
+    root_dir = "sources"
+    subdir = next(Path(root_dir).iterdir())  # Get first subdirectory
+    
+    args = DataArgs(
+        root_dir=root_dir,
+        sources={subdir.name: 1.0},  # Single source with weight 1.0
+        batch_size=1,
+        seq_len=1024,
+        n_views=2,
+        seed=42,
+        add_bos=True,
+        add_eos=True,
+        load_async=False,  # Disable async loading for easier debugging
+        prefetch_size=2,
+        tokenizer=TokenizerArgs(name="char")
+    )
+    
+    logger.info(f"Testing single source: {subdir.name}")
+    state = init_dataloader_state_from_args(args, rank=0, world_size=1)
+    
+    with build_dataloader_from_args(args, state) as loader:
+        batch, _ = next(loader)
+        logger.info(f"Successfully loaded batch of shape: {batch.shape}")
+
+def test_data_distribution():
+    """Test if data is being properly distributed across workers"""
+    root_dir = "sources"
+    world_size = 4
+    
+    args = DataArgs(
+        root_dir=root_dir,
+        sources=get_source_weights(root_dir),
+        batch_size=2,
+        seq_len=1024,
+        n_views=2,
+        seed=42,
+        add_bos=True,
+        add_eos=True,
+        load_async=False,
+        prefetch_size=2,
+        tokenizer=TokenizerArgs(name="char")
+    )
+    
+    logger.info("Testing data distribution across workers...")
+    
+    # Test each rank
+    for rank in range(world_size):
+        state = init_dataloader_state_from_args(args, rank=rank, world_size=world_size)
+        
+        with build_dataloader_from_args(args, state) as loader:
+            batch, _ = next(loader)
+            logger.info(f"Rank {rank}: loaded batch of shape {batch.shape}")
+
+if __name__ == "__main__":
+    logger.info("Starting dataloader tests...")
+    
+    try:
+        # Run main test
+        main()
+        
+        # Run additional tests
+        test_single_source()
+        test_data_distribution()
+        
+        logger.info("All tests completed successfully!")
+        
+    except Exception as e:
+        logger.error(f"Test failed: {str(e)}")
+        raise

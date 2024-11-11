@@ -119,6 +119,12 @@ def main(dataset, memory, data_dir, seed=42):
     if "fineweb" in dataset:
         parquet_to_jsonl(dataset, work_dir, src_dir, src_dir)
 
+    # # Download dataset
+    # download_dataset(repo_id, src_dir, allow_patterns)
+
+    # if "dclm_baseline_1.0_10prct" in dataset:
+    #     parquet_to_jsonl(dataset, work_dir, src_dir + '/global-shard_01_of_10/local-shard_0_of_10/shard_00000000_processed.jsonl.zst', src_dir)
+
     # Set up environment variables
     os.environ["MEMORY"] = f"{memory}"
     os.environ["SEED"] = f"{seed}"
