@@ -15,6 +15,7 @@ from typing import Dict, Any, Iterator, Optional, TypedDict
 from lingua.tokenizer import build_tokenizer, TokenizerArgs
 import numpy as np
 import logging
+from itertools import islice
 
 logger = logging.getLogger()
 
@@ -141,12 +142,21 @@ def read_jsonl_block(file_path: str):
 
 def sample_and_combine_lines(lines: list, rng: np.random.Generator) -> dict:
     """Sample 3 random lines and combine their text/content."""
-    sampled_lines = rng.choice(lines, size=3, replace=False)
-    combined_text = ""
+    random_num = rng.integers(0, 800)
+    if random_num < 160:
+        num_lines = 4
+    elif random_num < 160 + 450:
+        num_lines = 3
+    elif random_num < 160 + 450 + 40:
+        num_lines = 5
+    else:
+        num_lines = 2
+    sampled_lines = rng.choice(lines, size=num_lines, replace=False)
+    combined_text = "B" # B is begin training symbol
     for line in sampled_lines:
         content_key = "text" if "text" in line else "content"
-        combined_text += line[content_key] + " "
-    return {"text": combined_text.strip()}
+        combined_text += line[content_key] + ""
+    return {"text": combined_text.strip() + "ET"} # E is end training, T is begin testing
 
 def read_jsonl(
     file_path: str,
@@ -169,6 +179,7 @@ def read_jsonl(
     Yields:
         JSONLState: Represents the state of each line read according to window and offset.
     """
+
     if (offset < 0) or (offset >= block_size):
         raise RuntimeError(f"JSONL iterator offset value is invalid")
     # We assume the start position is either 0 or given by the last line yielded
@@ -196,6 +207,7 @@ def read_jsonl(
                     offset=offset,
                     current_iter=current_iter,
                 )
+
                 yield json.loads(line), state
 
 
@@ -206,11 +218,29 @@ def loop_on_jsonl(
     offset: int,
     current_iter: int,
 ):
+    all_lines = read_jsonl_block(file_path)
+
+    # Create RNG with seed based on file path and current iteration
+    seed = hash(file_path + str(current_iter)) & 0xFFFFFFFF
+    rng = np.random.default_rng(seed)
+    max_length = 4097
+
     """Makes the block jsonl iterator infinite and updates n_iter counter"""
     try:
         while True:
             it = read_jsonl(file_path, position, block_size, offset, current_iter)
             for content, jsonl_state in it:
+                # print("content", content)
+                content_length = max_length
+                while content_length >= max_length:
+                    combined_content = sample_and_combine_lines(all_lines, rng)
+                    val = combined_content["text"] + content["text"] + "F"
+                    content_length = len(val)
+                    # print(content_length)
+
+                content["text"] = val
+                content["text"] += 'P' * (max_length - content_length)
+                # print("content long", content)
                 yield content, jsonl_state
             current_iter += 1
             position = 0
@@ -328,80 +358,137 @@ def get_empty_buffer_state(
     return resume_state
 
 
+# def pack_tokens(
+#     iterator: Iterator,
+#     empty_buffer_state: PackTokensState,
+# ):
+#     """
+#     Iterates over tokens, packing them into chunks.
+
+#     This function aggregates tokens into a buffer and yields fixed-size chunks with dimensions `(output_seq_len, n_views)`,
+#     where each column represents shifted sequences of tokens. It ensures continuity in token sequences across chunks,
+#     preventing boundary effects and maintaining consistency regardless of `n_views`.
+
+#     Parameters:
+#     - iterator: An iterator that yields pairs of (tokens, state), where tokens is a 1D sequence of tokens and state contains all necessary information to resume iterator from current position.
+#     - it_state: State of the iterator currently.
+#     - start_token (int): The index of the first token to start reading from for the first sequence.
+#     - output_seq_len (int): The length of the output sequences to be generated.
+#     - n_views (int): The number of shifted views to include in each output chunk.
+
+#     Yields:
+#     - numpy.ndarray: An array of shape `(output_seq_len, n_views)` containing the packed tokens.
+#     - PackTokensState: The state required to resume packing tokens from where the last returned chunk.
+
+#     The function handles the complexity of determining the correct state for resuming iteration after the buffer is cleared, ensuring seamless continuation of token sequences.
+#     """
+#     buffer = []
+#     states = []
+#     output_seq_len = empty_buffer_state["output_seq_len"]
+#     n_views = empty_buffer_state["n_views"]
+#     start_token = 0 # empty_buffer_state["start_token"]
+#     previous_state = empty_buffer_state["it_state"]
+#     buffer_size = output_seq_len + n_views - 1
+#     for i, (tokens, state) in enumerate(iterator):
+#         end_token = start_token + len(tokens)
+#         # print("buffer size", buffer_size)
+#         # print("end token", end_token)
+#         sample_is_read = False
+#         while not sample_is_read:
+#             assert start_token < len(
+#                 tokens
+#             ), f"Start token index {start_token} bigger than sequence {len(tokens)}"
+#             free_space = buffer_size - len(buffer)
+#             # print("free space", free_space)
+#             seq_len = min(free_space, len(tokens) - start_token)
+#             end_token = start_token + seq_len
+#             buffer.extend(tokens[start_token:end_token])
+#             # print("buffer len after extend", len(buffer))
+#             start_token = end_token
+
+#             states.append(
+#                 PackTokensState(
+#                     start_token=end_token, # orig start token
+#                     seq_len=seq_len,
+#                     it_state=previous_state,
+#                     output_seq_len=output_seq_len,
+#                     n_views=n_views,
+#                 )
+#             )
+#             assert len(buffer) <= buffer_size, "Buffer overflow"
+
+#             if len(buffer) == buffer_size:
+#                 # print("FULL buffer")
+#                 out = np.array(buffer)
+#                 # print("out", out)
+#                 assert out.ndim == 1, "Iterator should return 1D sequences"
+#                 out = np.lib.stride_tricks.sliding_window_view(
+#                     out, n_views, axis=0
+#                 )  # (output_seq_len, n_views)
+#                 # print("out 2 views", out)
+#                 # We rewind by n_views to account for the last tokens not having their targets
+#                 # rewinded_idx = start_token - (n_views - 1)
+#                 # empty_buffer_state = get_empty_buffer_state(rewinded_idx, states)
+#                 # buffer = buffer[output_seq_len:]
+#                 # assert len(buffer) == (n_views - 1)
+
+#                 yield out, empty_buffer_state
+
+#             if start_token == len(tokens):
+#                 start_token = 0
+#                 sample_is_read = True
+#                 previous_state = state
 def pack_tokens(
     iterator: Iterator,
     empty_buffer_state: PackTokensState,
+    batch_size: int,
 ):
     """
-    Iterates over tokens, packing them into chunks.
-
-    This function aggregates tokens into a buffer and yields fixed-size chunks with dimensions `(output_seq_len, n_views)`,
-    where each column represents shifted sequences of tokens. It ensures continuity in token sequences across chunks,
-    preventing boundary effects and maintaining consistency regardless of `n_views`.
-
+    Iterates over tokens, collecting sequences from different documents.
+    
     Parameters:
-    - iterator: An iterator that yields pairs of (tokens, state), where tokens is a 1D sequence of tokens and state contains all necessary information to resume iterator from current position.
-    - it_state: State of the iterator currently.
-    - start_token (int): The index of the first token to start reading from for the first sequence.
-    - output_seq_len (int): The length of the output sequences to be generated.
-    - n_views (int): The number of shifted views to include in each output chunk.
-
+    - iterator: An iterator that yields pairs of (tokens, state)
+    - empty_buffer_state: Contains output_seq_len, n_views, and other state info
+    - batch_size: Number of sequences to collect before shuffling and yielding
+    
     Yields:
-    - numpy.ndarray: An array of shape `(output_seq_len, n_views)` containing the packed tokens.
-    - PackTokensState: The state required to resume packing tokens from where the last returned chunk.
-
-    The function handles the complexity of determining the correct state for resuming iteration after the buffer is cleared, ensuring seamless continuation of token sequences.
+    - numpy.ndarray: An array of shape (output_seq_len, n_views) for each sequence
+    - PackTokensState: State required to resume packing tokens
     """
-    buffer = []
-    states = []
     output_seq_len = empty_buffer_state["output_seq_len"]
     n_views = empty_buffer_state["n_views"]
-    start_token = empty_buffer_state["start_token"]
-    previous_state = empty_buffer_state["it_state"]
     buffer_size = output_seq_len + n_views - 1
-    for i, (tokens, state) in enumerate(iterator):
-        end_token = start_token
-        sample_is_read = False
-        while not sample_is_read:
-            assert start_token < len(
-                tokens
-            ), f"Start token index {start_token} bigger than sequence {len(tokens)}"
-            free_space = buffer_size - len(buffer)
-            seq_len = min(free_space, len(tokens) - start_token)
+    sequences = []
+    
+    for tokens, state in iterator:
+        start_token = 0
+        while start_token < len(tokens):
+            # Extract sequence of appropriate length
+            seq_len = min(buffer_size, len(tokens) - start_token)
             end_token = start_token + seq_len
-            buffer.extend(tokens[start_token:end_token])
-            start_token = end_token
-
-            states.append(
-                PackTokensState(
-                    start_token=start_token,
+            sequence = tokens[start_token:end_token]
+            
+            # If sequence is long enough, process it
+            if len(sequence) == buffer_size:
+                # Create sliding window views
+                sequence = np.array(sequence)
+                sequence = np.lib.stride_tricks.sliding_window_view(
+                    sequence, n_views, axis=0
+                )  # (output_seq_len, n_views)
+                
+                # Save current state
+                next_state = PackTokensState(
+                    start_token=end_token,
                     seq_len=seq_len,
-                    it_state=previous_state,
+                    it_state=state,
                     output_seq_len=output_seq_len,
                     n_views=n_views,
                 )
-            )
-            assert len(buffer) <= buffer_size, "Buffer overflow"
-
-            if len(buffer) == buffer_size:
-                out = np.array(buffer)
-                assert out.ndim == 1, "Iterator should return 1D sequences"
-                out = np.lib.stride_tricks.sliding_window_view(
-                    out, n_views, axis=0
-                )  # (output_seq_len, n_views)
-
-                # We rewind by n_views to account for the last tokens not having their targets
-                rewinded_idx = start_token - (n_views - 1)
-                empty_buffer_state = get_empty_buffer_state(rewinded_idx, states)
-                buffer = buffer[output_seq_len:]
-                assert len(buffer) == (n_views - 1)
-
-                yield out, empty_buffer_state
-
-            if start_token == len(tokens):
-                start_token = 0
-                sample_is_read = True
-                previous_state = state
+                
+                # Yield each sequence individually
+                yield sequence, next_state
+            
+            start_token = end_token
 
 
 def batch_and_shuffle_prefetched_sequences(
@@ -608,15 +695,68 @@ def setup_sources(multi_state):
     return path_to_iter
 
 
+# @contextlib.contextmanager
+# def build_dataloader(
+#     state: PrefetchState,
+# ):
+#     pack_state = state["it_state"]
+#     tokenizer_state = pack_state["it_state"]
+#     multi_state = tokenizer_state["it_state"]
+
+#     path_to_iter = setup_sources(multi_state)
+#     data_it = choose_source(
+#         source_to_iterator=path_to_iter,
+#         source_to_state=multi_state["source_to_state"],
+#         root_dir=multi_state["root_dir"],
+#         sources=multi_state["sources"],
+#         rng_state=multi_state["rng_state"],
+#     )
+#     data_it = tokenize(
+#         data_it,
+#         tokenizer_state["add_bos"],
+#         tokenizer_state["add_eos"],
+#         tokenizer_state["name"],
+#         tokenizer_state["path"],
+#     )
+
+#     data_it = pack_tokens(
+#         data_it,
+#         pack_state,
+#     )
+
+
+#     data_it = batch_and_shuffle_prefetched_sequences(
+#         data_loader=data_it,
+#         seq_len=pack_state["output_seq_len"],
+#         n_views=pack_state["n_views"],
+#         batch_size=state["batch_size"],
+#         prefetch_size=state["prefetch_size"],
+#         state=state,
+#     )
+#     yield data_it
+#     for it in path_to_iter.values():
+#         it.close()
+#     data_it.close()
+
 @contextlib.contextmanager
 def build_dataloader(
     state: PrefetchState,
 ):
+    """
+    Modified build_dataloader that ensures different sequences in batches
+    """
     pack_state = state["it_state"]
     tokenizer_state = pack_state["it_state"]
     multi_state = tokenizer_state["it_state"]
 
+    # Set up source iterators
     path_to_iter = setup_sources(multi_state)
+    
+    # Initialize RNG for source selection
+    source_rng = np.random.default_rng()
+    source_rng.bit_generator.state = multi_state["rng_state"]
+    
+    # Create iterator pipeline
     data_it = choose_source(
         source_to_iterator=path_to_iter,
         source_to_state=multi_state["source_to_state"],
@@ -624,6 +764,7 @@ def build_dataloader(
         sources=multi_state["sources"],
         rng_state=multi_state["rng_state"],
     )
+    
     data_it = tokenize(
         data_it,
         tokenizer_state["add_bos"],
@@ -635,6 +776,7 @@ def build_dataloader(
     data_it = pack_tokens(
         data_it,
         pack_state,
+        state["batch_size"],
     )
 
     data_it = batch_and_shuffle_prefetched_sequences(
@@ -646,10 +788,11 @@ def build_dataloader(
         state=state,
     )
     yield data_it
-    for it in path_to_iter.values():
-        it.close()
-    data_it.close()
-
+    # yield from data_it
+    
+    # for it in path_to_iter.values():
+    #     it.close()
+    # data_it.close()
 
 def feed_buffer(queue: Queue, stop_event: EventClass, iterator_builder):
     """
@@ -722,7 +865,7 @@ class DataArgs:
     root_dir: Optional[str] = None
     sources: Dict[str, float] = field(default_factory=dict)
     batch_size: int = 2
-    seq_len: int = 2048
+    seq_len: int = 4096
     n_views: int = 2
     seed: int = 42
     add_bos: bool = True
@@ -797,7 +940,7 @@ def main():
         root_dir=root_dir,
         sources=get_source_weights(root_dir),
         batch_size=4,
-        seq_len=2048,
+        seq_len=4096,
         n_views=2,
         seed=42,
         add_bos=True,
@@ -836,7 +979,7 @@ def main():
                 seq_idx = 0  # First sequence in batch
                 view_idx = 0  # First view
                 seq = batch[seq_idx, :, view_idx]
-                logger.info(f"Sample sequence (first 50 tokens): {seq[:50]}")
+                logger.info(f"Sample sequence (first 50 tokens): {seq}")
                 
                 # Update state
                 state = new_state
@@ -852,18 +995,19 @@ def test_single_source():
     """Test loading from a single source directory"""
     root_dir = "sources"
     subdir = next(Path(root_dir).iterdir())  # Get first subdirectory
+    # subdir = next(islice(Path(root_dir).iterdir(), 1, 2))
     
     args = DataArgs(
         root_dir=root_dir,
         sources={subdir.name: 1.0},  # Single source with weight 1.0
-        batch_size=1,
-        seq_len=1024,
+        batch_size=10,
+        seq_len=4096,
         n_views=2,
         seed=42,
         add_bos=True,
         add_eos=True,
         load_async=False,  # Disable async loading for easier debugging
-        prefetch_size=2,
+        prefetch_size=3,
         tokenizer=TokenizerArgs(name="char")
     )
     
@@ -873,6 +1017,9 @@ def test_single_source():
     with build_dataloader_from_args(args, state) as loader:
         batch, _ = next(loader)
         logger.info(f"Successfully loaded batch of shape: {batch.shape}")
+        for seq_idx in range(5):
+            seq = batch[seq_idx, :, 0]
+            logger.info(f"Sample sequence ): {seq[:20]}")
 
 def test_data_distribution():
     """Test if data is being properly distributed across workers"""
@@ -882,14 +1029,14 @@ def test_data_distribution():
     args = DataArgs(
         root_dir=root_dir,
         sources=get_source_weights(root_dir),
-        batch_size=2,
-        seq_len=1024,
+        batch_size=10,
+        seq_len=4096,
         n_views=2,
         seed=42,
         add_bos=True,
         add_eos=True,
         load_async=False,
-        prefetch_size=2,
+        prefetch_size=100,
         tokenizer=TokenizerArgs(name="char")
     )
     
@@ -902,16 +1049,20 @@ def test_data_distribution():
         with build_dataloader_from_args(args, state) as loader:
             batch, _ = next(loader)
             logger.info(f"Rank {rank}: loaded batch of shape {batch.shape}")
+            for seq_idx in range(args.batch_size):
+                seq = batch[seq_idx, :, 0]
+                logger.info(f"Sample sequence ): {seq[:20]}")
+
 
 if __name__ == "__main__":
     logger.info("Starting dataloader tests...")
     
     try:
         # Run main test
-        main()
+        # main()
         
         # Run additional tests
-        test_single_source()
+        # test_single_source()
         test_data_distribution()
         
         logger.info("All tests completed successfully!")
